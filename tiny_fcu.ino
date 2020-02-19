@@ -13,10 +13,10 @@
 // as discussed here: https://www.facebook.com/groups/WolverineAirsoftSMP/2434754936777579
 
 // engine cycle control
-#define sane_dwell 30      // default 30 or Polarstar(OB):19 // how nozzle takes to fire and move back, to allow BB load
-#define sane_cooldown 40   // default 50 or Polarstar(OB):12 // how nozzle takes to move forward and seat the BB before next shot
-#define insane_dwell 19    // default 30 or Polarstar(OB):19 // how nozzle takes to fire and move back, to allow BB load
-#define insane_cooldown 19 // default 50 or Polarstar(OB):12 // how nozzle takes to move forward and seat the BB before next shot
+#define sane_dwell 130      // default 30 or Polarstar:19 // how nozzle takes to fire and move back, to allow BB load
+#define sane_cooldown 40   // default 50 or Polarstar:12 // how nozzle takes to move forward and seat the BB before next shot
+#define insane_dwell 28    // default 30 or Polarstar:19 // how nozzle takes to fire and move back, to allow BB load
+#define insane_cooldown 19 // default 50 or Polarstar:12 // how nozzle takes to move forward and seat the BB before next shot
 
 // trigger automation
 #define binary_trigger_time 130            // less than this long pressed and double tap, more and its single shot only
@@ -24,14 +24,15 @@
 #define single_supress_time_frenzy 300     // as above but in frenzy
 #define single_supress_cycle 500           // when in "single suppress" how much time between shots
 #define single_supress_cycle_in_frenzy 200 // as above but in frenzy
-#define full_auto_trigger_time 130         // more than this long pressed and full auto
+#define full_auto_trigger_time 500         // more than this long pressed and full auto
+#define full_auto_trigger_time_frenzy 130  // more than this long pressed and full auto
 #define frenzy_timeout 5000                // double shots activate frenzy for this time amount
 
 // battery saver
 #define long_sleep_time 15 * 60 * 1000 // after 15 minutes, enter long sleep, may take up to 30 seconds to wake up (usually less)
 #define long_sleep_cycle 30 * 1000     // when in safe for a long period, sleep longer to try and keep the battery from dying
 #define short_sleep_cycle 1000         // when in safe, sleep a bit to save power
-
+ 
 // fire modes
 #define SAFE 0
 #define SEMI 1
@@ -70,9 +71,7 @@ void loop()
         return;
 
     if (millis() - lastTriggerPress > frenzy_timeout)
-    {
         frenzy = false;
-    }
 
     lastTriggerPress = millis();
     switch (mode)
@@ -100,13 +99,9 @@ void fire_once()
 int get_firing_mode()
 {
     if (safe_btn.isPressed())
-    {
         return SAFE;
-    }
     if (full_btn.isPressed())
-    {
         return FULL;
-    }
     return SEMI;
 }
 
@@ -164,6 +159,8 @@ void perform_semi_logic()
     // wait at least the minimum dwell to cycle properly
     if (pull_time < sane_dwell)
         delay(sane_dwell - pull_time);
+
+    // complete the cycle
     digitalWrite(fire_pin, LOW);
     delay(sane_cooldown);
 }
@@ -205,6 +202,43 @@ void perform_semi_logic_frenzy()
 
 void perform_full_auto_logic()
 {
+    // in frenzy, skip the "normal" logic
+    if (frenzy)
+    {
+        perform_full_auto_logic_frenzy();
+        return;
+    }
+
+    // 3 round burst on short press
+    fire_once();
+    fire_once();
+    fire_once();
+
+    // check if its a long press
+    while (trigger_btn.isPressed())
+    {
+        delay(10);
+        if (millis() - lastTriggerPress >= full_auto_trigger_time_frenzy)
+        {
+            // if its a long press, enter "full auto" mode
+            while (trigger_btn.isPressed())
+            {
+                // fire continously
+                fire_once();
+            }
+        }
+    }
+}
+
+void perform_full_auto_logic_frenzy()
+{
+    // in frenzy, skip the "normal" logic
+    if (frenzy)
+    {
+        perform_semi_logic_frenzy();
+        return;
+    }
+
     // 3 round burst on short press
     fire_once();
     fire_once();
