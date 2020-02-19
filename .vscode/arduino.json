@@ -1,0 +1,7 @@
+{
+    "programmer": "AVRISP mkII",
+    "port": "COM9",
+    "board": "digistump:avr:digispark-tiny",
+    "sketch": "tiny_fcu.ino",
+    "output": ".vscode/build"
+}

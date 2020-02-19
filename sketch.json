@@ -1,0 +1,8 @@
+{
+    "cpu": {
+        "fqbn": "arduino:avr:leonardo",
+        "name": "Arduino Leonardo",
+        "port": ""
+    },
+    "secrets": []
+}
