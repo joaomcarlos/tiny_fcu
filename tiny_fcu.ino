@@ -232,13 +232,6 @@ void perform_full_auto_logic()
 
 void perform_full_auto_logic_frenzy()
 {
-    // in frenzy, skip the "normal" logic
-    if (frenzy)
-    {
-        perform_semi_logic_frenzy();
-        return;
-    }
-
     // 3 round burst on short press
     fire_once();
     fire_once();
