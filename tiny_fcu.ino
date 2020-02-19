@@ -11,10 +11,14 @@
 #define full_pin 3    // input
 
 // as discussed here: https://www.facebook.com/groups/WolverineAirsoftSMP/2434754936777579
-#define sane_dwell 30                      // 30 or Polarstar:19 // how nozzle takes to fire and move back, to allow BB load
-#define sane_cooldown 40                   // 50 or Polarstar:12 // how nozzle takes to move forward and seat the BB before next shot
-#define insane_dwell 19                    // 30 or Polarstar:19 // how nozzle takes to fire and move back, to allow BB load
-#define insane_cooldown 19                 // 50 or Polarstar:12 // how nozzle takes to move forward and seat the BB before next shot
+
+// engine cycle control
+#define sane_dwell 30      // default 30 or Polarstar(OB):19 // how nozzle takes to fire and move back, to allow BB load
+#define sane_cooldown 40   // default 50 or Polarstar(OB):12 // how nozzle takes to move forward and seat the BB before next shot
+#define insane_dwell 19    // default 30 or Polarstar(OB):19 // how nozzle takes to fire and move back, to allow BB load
+#define insane_cooldown 19 // default 50 or Polarstar(OB):12 // how nozzle takes to move forward and seat the BB before next shot
+
+// trigger automation
 #define binary_trigger_time 130            // less than this long pressed and double tap, more and its single shot only
 #define single_supress_time 700            // more than this long pressed and fire once every
 #define single_supress_time_frenzy 300     // as above but in frenzy
@@ -22,6 +26,11 @@
 #define single_supress_cycle_in_frenzy 200 // as above but in frenzy
 #define full_auto_trigger_time 130         // more than this long pressed and full auto
 #define frenzy_timeout 5000                // double shots activate frenzy for this time amount
+
+// battery saver
+#define long_sleep_time 15 * 60 * 1000 // after 15 minutes, enter long sleep, may take up to 30 seconds to wake up (usually less)
+#define long_sleep_cycle 30 * 1000     // when in safe for a long period, sleep longer to try and keep the battery from dying
+#define short_sleep_cycle 1000         // when in safe, sleep a bit to save power
 
 // fire modes
 #define SAFE 0
@@ -39,6 +48,7 @@ void setup()
     setup_power_saving();
 }
 
+long lastNonSleepCycle = 0;
 long lastTriggerPress = 0;
 int mode = SAFE;
 bool frenzy = false;
@@ -47,9 +57,14 @@ void loop()
     mode = get_firing_mode();
     if (mode == SAFE)
     {
-        Narcoleptic.delay(500); // During this time power consumption is minimised
+        if (millis() - lastNonSleepCycle > long_sleep_time)
+            Narcoleptic.delay(long_sleep_time); // During this time power consumption is minimised
+        else
+            Narcoleptic.delay(short_sleep_cycle); // During this time power consumption is minimised
         return;
     }
+
+    lastNonSleepCycle = millis(); // to aid in detecting long sleeps
 
     if (!trigger_btn.isPressed())
         return;
